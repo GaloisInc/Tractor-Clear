@@ -1,0 +1,25 @@
+From 08df5dde64315d42875fbd8a752225f8eb0b6ea2 Mon Sep 17 00:00:00 2001
+From: Valentin Robert <val@galois.com>
+Date: Wed, 3 Sep 2025 11:11:22 -0400
+Subject: [PATCH] force march to x86-64
+
+---
+ scripts/test_translator.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/test_translator.py b/scripts/test_translator.py
+index da5338bf..94527f6f 100755
+--- a/scripts/test_translator.py
++++ b/scripts/test_translator.py
+@@ -140,7 +140,7 @@ def target_args(target: Optional[str]) -> List[str]:
+     if target:
+         return ["-target", target]
+     else:
+-        return ["-march=native"]
++        return ["-march=x86-64"]
+ 
+ 
+ def build_static_library(c_files: Iterable[CFile],
+-- 
+2.51.0
+
