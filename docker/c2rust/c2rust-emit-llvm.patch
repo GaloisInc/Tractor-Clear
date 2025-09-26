@@ -1,0 +1,26 @@
+From af7cb3d20be4684f5d6dc61b04c4f91bcba22956 Mon Sep 17 00:00:00 2001
+From: Valentin Robert <val@galois.com>
+Date: Thu, 25 Sep 2025 16:04:06 -0700
+Subject: [PATCH] emit-llvm
+
+---
+ scripts/test_translator.py | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/scripts/test_translator.py b/scripts/test_translator.py
+index 70138a7b8..8c1ba1fca 100755
+--- a/scripts/test_translator.py
++++ b/scripts/test_translator.py
+@@ -163,6 +163,10 @@ def build_static_library(c_files: Iterable[CFile],
+     else:
+         args += paths
+
++    llvmir_args = args + ["-emit-llvm"]
++    retcode, _, stderr = clang[llvmir_args].run(retcode=None)
++    if retcode != 0:
++        raise NonZeroReturn(stderr)
+     logging.debug("compilation command:\n %s", str(clang[args]))
+     retcode, stdout, stderr = clang[args].run(retcode=None)
+
+--
+2.43.0

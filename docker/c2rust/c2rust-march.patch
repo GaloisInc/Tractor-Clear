@@ -17,9 +17,8 @@ index da5338bf..94527f6f 100755
      else:
 -        return ["-march=native"]
 +        return ["-march=x86-64"]
- 
- 
- def build_static_library(c_files: Iterable[CFile],
--- 
-2.51.0
 
+
+ def build_static_library(c_files: Iterable[CFile],
+--
+2.51.0
