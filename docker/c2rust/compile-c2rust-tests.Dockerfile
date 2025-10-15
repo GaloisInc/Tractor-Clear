@@ -1,25 +1,10 @@
-# Note: pinning this to today's (Sep 25, 2025), not because we need it, but just because some steps
-# are very long, and it's annoying to rebuild it all when they push some minor change to the Ubuntu
-# Docker image.  Feel free to bump this pin infrequently if any reason comes up.
-FROM ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc AS compile-c2rust-tests
+FROM compile-c2rust AS compile-c2rust-tests
 
-RUN apt update -y --fix-missing
-RUN apt install -y build-essential clang-18 cmake file git libclang-dev libssl-dev llvm pkg-config python3 python3-venv rustup tree vim
-RUN rustup default stable
-
-RUN git clone https://github.com/immunant/c2rust.git
 WORKDIR /c2rust
-# main as of Sep 25, 2025
-ARG C2RUST_COMMIT=76e2e5fd1a55728e24f3067c8e6a8b7823b15298
-RUN git checkout ${C2RUST_COMMIT}
-
-# This step takes close to an hour!
-RUN cargo build
-RUN cargo build --release
-
 RUN python3 -m venv venv
 ENV PATH="venv/bin:$PATH"
 RUN pip install plumbum psutil toml
+
 # Note: in my testing setup, clang in the Docker image will fail when passed `-march=native` because
 # it will detect "athlon-xp", which is not supported by clang...  The wrapper just replaces "native"
 # with "x86-64" which should work.

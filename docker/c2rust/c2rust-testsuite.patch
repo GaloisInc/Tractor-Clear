@@ -1,0 +1,29 @@
+From 7579164529c95afc7e915724108174419adba284 Mon Sep 17 00:00:00 2001
+From: Valentin Robert <val@galois.com>
+Date: Fri, 26 Sep 2025 13:29:39 -0700
+Subject: [PATCH] libncurses patch
+
+---
+ tests/python2/conf.yml | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tests/python2/conf.yml b/tests/python2/conf.yml
+index 7804693..1b36548 100644
+--- a/tests/python2/conf.yml
++++ b/tests/python2/conf.yml
+@@ -7,9 +7,9 @@ requirements:
+         - liblzma-dev
+         - libgdbm-dev
+         - tk-dev # apt-get -y --no-install-recommends install tk-dev
+-        - libncurses5-dev
+-        - libexpat1-dev 
+-        - libssl-dev 
++        - libncurses-dev
++        - libexpat1-dev
++        - libssl-dev
+         - zlib1g-dev
+         - libsqlite3-dev
+         - libbz2-dev
+-- 
+2.51.0
+
