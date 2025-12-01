@@ -1,6 +1,6 @@
 # Pinning for consistency, feel free to bump this whenever convenient
-# Last bump: Oct 8, 2025
-FROM ubuntu:24.04@sha256:66460d557b25769b102175144d538d88219c077c678a49af4afca6fbfc1b5252 AS compile-tractor-test-corpus
+# Last bump: Nov 24, 2025
+FROM ubuntu:24.04@sha256:c35e29c9450151419d9448b0fd75374fec4fff364a27f176fb458d472dfc9e54 AS compile-tractor-test-corpus
 
 RUN apt update -y
 # Note: ripgrep, tree, and vim are for convenience when debugging the output image
@@ -24,10 +24,12 @@ ARG KNOWN_HOSTS="/root/.ssh/known_hosts"
 RUN ssh-keyscan github.com > ${KNOWN_HOSTS}
 RUN chmod 600 ${KNOWN_HOSTS}
 RUN chown root:root ${KNOWN_HOSTS}
+# Note: you need to have added your identities to your ssh-agent
+# Check the output of `ssh-add -L` if this step fails.
 RUN --mount=type=ssh git clone git@github.com:DARPA-TRACTOR-Program/Test-Corpus.git
 
-# main as of Oct 9, 2025
-ARG TRACTOR_TESTS_COMMIT=9efde56843ab59e86b0683babe541b7acb21e13d
+# main as of Nov 24, 2025
+ARG TRACTOR_TESTS_COMMIT=96ce4c7e098bc5bbaa536c83b61ca77f2acb4439
 WORKDIR /Test-Corpus/
 RUN git checkout ${TRACTOR_TESTS_COMMIT}
 
@@ -44,7 +46,7 @@ RUN ln -s /clang-wrapper.sh /usr/local/bin/clang
 # we could do it once and for all.  TODO
 COPY cargo-wrapper.sh /
 RUN ln -s /cargo-wrapper.sh /usr/local/bin/cargo
-RUN CC=/usr/local/bin/clang RUSTFLAGS="--emit=llvm-ir,link" ./deployment/scripts/github-actions/run-tests.pyz --jobs 0 --junit-xml junit.xml
+RUN CC=/usr/local/bin/clang RUSTFLAGS="--emit=llvm-ir,link" ./deployment/scripts/github-actions/run-tests.pyz --junit-xml junit.xml
 
 ARG LLVMIR_DIR="/tractor-test-corpus-x86-64-llvmir"
 RUN mkdir -p ${LLVMIR_DIR}/build
@@ -56,29 +58,32 @@ RUN for bc in ./*/*/build-ninja/*.bc; \
       llvm-dis-20 -o ${LLVMIR_DIR}/`dirname $bc`/`basename $bc ".bc"`.ll $bc; \
     done
 # Grab all dependency LLVM IR files, aggregate them all together (to avoid large redundant copies)
-RUN for ll in ./*/*/runner/release/deps/*.ll; do \
+RUN for ll in /Test-Corpus/target/release/deps/*.ll; do \
       llcopy="${LLVMIR_DIR}/deps/`basename $ll`"; \
       if [ ! -f ${llcopy} ] && [ `basename $ll` != runner* ]; then \
         cp $ll $llcopy; \
       fi; \
     done
-# Grab all "runner" LLVM IR files, for projects set as libraries
-RUN for dir in ./*/*/; do \
-      mkdir -p ${LLVMIR_DIR}/${dir}; \
-      # Note: using `ls` here to avoid errors for non-library folders that don't have runners.
-      # There will be error messages in the Docker output, but it won't fail the run.
-      for ll in `ls ${dir}/runner/release/deps/runner-*.ll`; do \
-        cp $ll ${LLVMIR_DIR}/${dir}/`basename $ll`; \
-      done; \
-    done
-# This grabs all "build" LLVM IR files, and aggregates them all together (to avoid large redundant
-# copies)
-RUN for ll in ./*/*/runner/release/build/*/*.ll; do \
-      llcopy="${LLVMIR_DIR}/build/`basename $ll`"; \
-      if [ ! -f ${llcopy} ]; then \
-        cp $ll $llcopy; \
-      fi; \
-    done
+
+# This is no longer needed, now the runners are in the above
+# # Grab all "runner" LLVM IR files, for projects set as libraries
+# RUN for dir in ./*/*/; do \
+#       mkdir -p ${LLVMIR_DIR}/${dir}; \
+#       # Note: using `ls` here to avoid errors for non-library folders that don't have runners.
+#       # There will be error messages in the Docker output, but it won't fail the run.
+#       for ll in `ls ${dir}/runner/release/deps/runner-*.ll`; do \
+#         cp $ll ${LLVMIR_DIR}/${dir}/`basename $ll`; \
+#       done; \
+#     done
+
+# # This grabs all "build" LLVM IR files, and aggregates them all together (to avoid large redundant
+# # copies)
+# RUN for ll in ./*/*/runner/release/build/*/*.ll; do \
+#       llcopy="${LLVMIR_DIR}/build/`basename $ll`"; \
+#       if [ ! -f ${llcopy} ]; then \
+#         cp $ll $llcopy; \
+#       fi; \
+#     done
 
 ARG MISSING_SYMBOLS_DIR="/tmp/missing_symbols"
 COPY missing_symbols/Cargo.toml ${MISSING_SYMBOLS_DIR}/Cargo.toml
@@ -105,12 +110,10 @@ RUN mv \
   deps/alloc-*.ll \
   deps/arbitrary-*.ll \
   deps/argh-*.ll \
-  # we get 2 copies of this one, but I think we only need this one
-  deps/argh_shared-ac*.ll \
+  deps/argh_shared-25ec8866881681c4.ll \
   deps/core-*.ll \
   deps/getrandom-*.ll \
   deps/gimli-*.ll \
-  # Note: we get 2 copies of hashbrown, but I think we need both
   deps/hashbrown-*.ll \
   deps/libloading-*.ll \
   deps/memchr-*.ll \
@@ -121,6 +124,7 @@ RUN mv \
   deps/rustc_demangle-*.ll \
   deps/ryu-*.ll \
   deps/serde-*.ll \
+  deps/serde_core-*.ll \
   deps/serde_json-*.ll \
   deps/std-*.ll \
   deps/std_detect-*.ll \
@@ -136,18 +140,15 @@ RUN for dep in ${WANTED_DEPS_DIR}/*.ll; do \
     done
 
 # Then we can compile/link the runners against the dependencies
-RUN for outer_dir in B01_organic; do \
-      for inner_dir in `ls ${outer_dir}`; do \
-      # for inner_dir in `ls ${outer_dir}`; do \
-        # Note: directly calling clang here to avoid our wrapper
-        /usr/bin/clang-20 ${outer_dir}/${inner_dir}/runner*.ll ${WANTED_DEPS_OBJ_DIR}/*.o \
-          -o ${outer_dir}/${inner_dir}/run_${inner_dir}; \
-      done; \
+RUN for runner in ./deps/*_lib_runner-*.ll; do \
+      # Note: directly calling clang here to avoid our wrapper
+      /usr/bin/clang-20 ${runner} ${WANTED_DEPS_OBJ_DIR}/*.o \
+        -o run_`basename ${runner} .ll`; \
     done
 
 # Note: at this point, the image is really big because of all the intermediate compilation files.
 # The following cleans up all those files, making it much smaller, but less debuggable.
-RUN rm -rf /Test-Corpus/
+# RUN rm -rf /Test-Corpus/
 
 # Just for convenience, leave the user in the output directory
 WORKDIR ${LLVMIR_DIR}
