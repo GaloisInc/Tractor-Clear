@@ -101,6 +101,8 @@ ARG WANTED_DEPS_DIR="${LLVMIR_DIR}/wanted_deps"
 RUN mkdir -p ${WANTED_DEPS_DIR}
 ARG WANTED_DEPS_OBJ_DIR="${LLVMIR_DIR}/wanted_deps_obj"
 RUN mkdir -p ${WANTED_DEPS_OBJ_DIR}
+ARG RUNNERS_DIR="${LLVMIR_DIR}/runners"
+RUN mkdir -p ${RUNNERS_DIR}
 
 # Moving all the LLVM IR files we need in the wanted deps directory.  What remains in deps/ are
 # dependencies we don't actually need.
@@ -132,6 +134,8 @@ RUN mv \
   deps/missing_symbols-*.ll \
   ${WANTED_DEPS_DIR}
 
+RUN mv deps/*runner-*.ll ${RUNNERS_DIR}
+
 # We can compile all the dependencies LLVM IR files to object files once and for all
 # Note: directly calling clang here to avoid our wrapper
 RUN for dep in ${WANTED_DEPS_DIR}/*.ll; do \
@@ -140,7 +144,8 @@ RUN for dep in ${WANTED_DEPS_DIR}/*.ll; do \
     done
 
 # Then we can compile/link the runners against the dependencies
-RUN for runner in ./deps/*_lib_runner-*.ll; do \
+# We do this mostly to witness that we have all of the symbols we need to build the full executable
+RUN for runner in ${RUNNERS_DIR}/*runner-*.ll; do \
       # Note: directly calling clang here to avoid our wrapper
       /usr/bin/clang-20 ${runner} ${WANTED_DEPS_OBJ_DIR}/*.o \
         -o run_`basename ${runner} .ll`; \
