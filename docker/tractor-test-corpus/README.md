@@ -7,10 +7,25 @@ from your host architecture.
 How to build
 ------------
 
+This image relies on having access to the [TRACTOR
+Test-Corpus](https://github.com/DARPA-TRACTOR-Program/Test-Corpus#) repository, and will not work if
+you don't have means to clone the repository.
+
+Once you have a setup where you can clone the above repository, you should make sure that you have a
+SSH agent running, and that it has your identity loaded.  For me, this is:
+```
+eval (ssh-agent -c)
+```
+to run the agent, and:
+```
+ssh-add ~/.ssh/id_ed25519
+```
+to add the relevant identity.
+
 Using your favorite of docker/podman/colima, you should be able to run, e.g.:
 
 ```
-docker build -f ./compile-tractor-test-corpus.Dockerfile --tag compile-tractor-test-corpus .
+docker build -f ./compile-tractor-test-corpus.Dockerfile --ssh default --tag compile-tractor-test-corpus .
 ```
 
 How to extract
