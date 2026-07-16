@@ -77,6 +77,7 @@ RUN rm /usr/local/bin/cargo
 # Skipped while debugging Dockerfile for faster build
 # RUN CC=/usr/local/bin/clang RUSTFLAGS="${RUSTFLAGS}" ./deployment/scripts/github-actions/run-tests.pyz
 
+ARG CARGO_BUILD_MODE="release"
 ARG LLVMIR_DIR="/tractor-test-corpus-x86-64-llvmir"
 RUN mkdir -p ${LLVMIR_DIR}/build
 RUN mkdir -p ${LLVMIR_DIR}/deps
@@ -123,7 +124,7 @@ WORKDIR ${MISSING_SYMBOLS_DIR}
 # modified cargo and bring all the LLVM IR files.
 # Make sure to use --release if the above are in release mode, and --debug if the above are in debug
 # mode, otherwise you will get mismatched hashes on core crate symbols
-RUN CARGO_TERM_VERBOSE=true CC=/usr/local/bin/clang CARGO_BUILD_TARGET="${TARGET}" RUSTFLAGS="${RUSTFLAGS}" cargo build --release
+RUN CARGO_TERM_VERBOSE=true CC=/usr/local/bin/clang CARGO_BUILD_TARGET="${TARGET}" RUSTFLAGS="${RUSTFLAGS}" cargo build --${CARGO_BUILD_MODE}
 RUN cp ${MISSING_SYMBOLS_DIR}/target/${TARGET}/release/deps/*.ll ${LLVMIR_DIR}/deps/
 
 # Note: trying to be explicit about module inclusion here so that we are aware of exactly what we're
@@ -263,9 +264,9 @@ RUN ${CLANG} opt.ll -o opt
 # WORKDIR /${COLOURBLIND_GOOD_DIR}
 # RUN CARGO_TERM_VERBOSE=true CC=/usr/local/bin/clang \
 #     CARGO_BUILD_TARGET="${TARGET}" RUSTFLAGS="${RUSTFLAGS} -C link-arg=-nostartfiles" \
-#     cargo build -Z build-std=core --release
+#     cargo build -Z build-std=core --${CARGO_BUILD_MODE}
 # RUN mkdir linked
-# RUN cp ./target/${TARGET}/release/deps/*.ll ./linked
+# RUN cp ./target/${TARGET}/${CARGO_BUILD_MODE}/deps/*.ll ./linked
 # WORKDIR /${COLOURBLIND_GOOD_DIR}/linked
 # # Note: was forced to bump to a rustc that uses clang-21, which produces the dead_on_return
 # # attribute, but clang-20.1.2 is unable to parse it, so we need to get rid of it...
@@ -283,9 +284,9 @@ RUN ${CLANG} opt.ll -o opt
 # WORKDIR /${COLOURBLIND_BAD_DIR}
 # RUN CARGO_TERM_VERBOSE=true CC=/usr/local/bin/clang \
 #     CARGO_BUILD_TARGET="${TARGET}" RUSTFLAGS="${RUSTFLAGS} -C link-arg=-nostartfiles" \
-#     cargo build -Z build-std=core --release
+#     cargo build -Z build-std=core --${CARGO_BUILD_MODE}
 # RUN mkdir linked
-# RUN cp ./target/${TARGET}/release/deps/*.ll ./linked
+# RUN cp ./target/${TARGET}/${CARGO_BUILD_MODE}/deps/*.ll ./linked
 # WORKDIR /${COLOURBLIND_BAD_DIR}/linked
 # # Note: was forced to bump to a rustc that uses clang-21, which produces the dead_on_return
 # # attribute, but clang-20.1.2 is unable to parse it, so we need to get rid of it...

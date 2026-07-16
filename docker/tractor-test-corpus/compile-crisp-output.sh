@@ -49,6 +49,7 @@ LIBS=(
   echo "CRISP_LINKED_DIR: ${CRISP_LINKED_DIR}"
   echo "TARGET: ${TARGET}"
   echo "RUSTFLAGS: ${RUSTFLAGS}"
+  echo "CARGO_BUILD_MODE: ${CARGO_BUILD_MODE}"
 
   for lib in ${LIBS[@]}; do
     (
@@ -57,10 +58,10 @@ LIBS=(
 
       CARGO_TERM_VERBOSE=true CC=/usr/local/bin/clang \
         CARGO_BUILD_TARGET="${TARGET}" RUSTFLAGS="${RUSTFLAGS} -C link-arg=-nostartfiles" \
-        cargo build
+        cargo build --${CARGO_BUILD_MODE}
 
       mkdir linked
-      cp ./target/x86_64-unknown-linux-gnu/debug/deps/*.ll ./linked
+      cp ./target/x86_64-unknown-linux-gnu/${CARGO_BUILD_MODE}/deps/*.ll ./linked
       cd linked
       # Note: if we ever get dead_on_return in the LLVM IR, we can use this to remove it:
       # RUN sed -i 's/ dead_on_return//g' *.ll
