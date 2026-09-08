@@ -5,54 +5,15 @@ set -o nounset
 set -o pipefail
 set -x
 
-LIBS=(
-  "bin2hex"
-  "bitwriter_add"
-  "collided"
-  "contrast_ratio"
-  "crc16"
-  "dequantize_granule"
-  "div_euclid"
-  "encode_quant"
-  "flac_validate"
-  "flip_horizontal"
-  "float2half"
-  "gaussian_kernel"
-  "half2float"
-  "hdr_bitrate"
-  "hdr_compare"
-  "hex2bin"
-  "hsl_to_rgb"
-  "hsv_to_rgb"
-  "ima_parse"
-  "ldexp_q2"
-  "max_size_frame"
-  "md5_digest"
-  "merge_sort"
-  "next_double"
-  "normalize"
-  "pow43"
-  "premultiply"
-  "read_side_info"
-  "rev16"
-  "rgb_to_hsv"
-  "synth_pair"
-  "tfm"
-  "to_barycentric"
-  "tritanopia"
-  "update_frame_header"
-  "update_md5"
-  "wcscat"
-)
-
 (
   echo "CRISP_LINKED_DIR: ${CRISP_LINKED_DIR}"
   echo "TARGET: ${TARGET}"
   echo "RUSTFLAGS: ${RUSTFLAGS}"
   echo "CARGO_BUILD_MODE: ${CARGO_BUILD_MODE}"
 
-  for lib in ${LIBS[@]}; do
+  for folder in *_lib/; do
     (
+      lib=`basename ${folder} _lib`
       echo "===== Working on ${lib} ====="
       cd ${lib}_lib/translated_rust
 

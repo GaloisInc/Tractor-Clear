@@ -1,22 +1,29 @@
 I would like you to generate some Rust code to append to an existing Rust file, that tests a given
 symbol with some given inputs.
 
+I will refer to the current batch of interest as "<batch>" in the rest of the document.  For the
+current invocation, I want you to work on batch "<batch>".
+
 The Rust code to be modified (append only) lives under:
-`/Users/val/galois/tractor/Tractor-Clear/docker/tractor-test-corpus/crisp-rust-outputs-gpt-5.4-20260311/Public-Tests/B01_organic/`
+`/Users/val/galois/tractor/Tractor-Clear/docker/tractor-test-corpus/crisp-rust-outputs-gpt-5.4-20260311/Public-Tests/<batch>/`
 in separate projects, one per directory there.
+
+You should ignore all directories that don't end with `_lib`, as they need to be able to set argv and read stdout, which you cannot do in our current setup.
+
 Within each project, the file to modify lives under `translated_rust/src/lib.rs`.
 
 I need the test functions to be callable from the FFI, so they need to be `unsafe extern "C"` and to
 have either no mangle or a fixed export name.
 
-The symbol under testing would usually match the project name with suffix `_ffi` instead of `_lib`,
-for instance `bitwriter_add_ffi`.  It's usually the only fn symbol marked `extern "C"` in the file.
+The symbol under testing should match the project name with suffix `_ffi` instead of `_lib`, for
+instance `bitwriter_add_ffi` for `bitwriter_add_lib`.  In such cases, it's usually the only fn
+symbol marked `extern "C"` in the file.
 
 The test inputs are to be found in:
-`/Users/val/galois/tractor/Test-Corpus/Public-Tests/B01_organic/<project>/test_vectors`, where `<project>` should match the project directory name from earlier.
+`/Users/val/galois/tractor/Test-Corpus/Public-Tests/<batch>/<project>/test_vectors`, where `<project>` should match the project directory name from earlier.
 
 They are defined in a JSON file, according to a schema that is defined in a Rust test harness:
-`/Users/val/galois/tractor/Test-Corpus/Public-Tests/B01_organic/<project>/runner/src/main.rs`
+`/Users/val/galois/tractor/Test-Corpus/Public-Tests/<batch>/<project>/runner/src/main.rs`
 
 The details of this file are a bit complicated, but really all we need for this task is:
 
@@ -89,9 +96,3 @@ Of course, you should find all test vectors in the test vectors directory, so th
 many such symbols as there are numbered JSON files in the test_vectors for that project.
 
 Make sure not to modify anything already in `lib.rs`!  You're only appending those functions.
-
-Now, this time, I only want you to do this in two places:
-1. In the `ima_parse_lib`, where it seems like some tests are missing, and,
-2. I would like you to double-check in `collided_lib` why the second tests is so different than the
-   other ones that you generated.  Here, you're allowed to modify the existing `run_test_2` to make
-   it more aligned with all the other ones, if possible.

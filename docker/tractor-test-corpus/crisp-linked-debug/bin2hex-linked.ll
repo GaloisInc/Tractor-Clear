@@ -3,6 +3,12 @@ source_filename = "llvm-link"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
+; ASSERT EQ: i1 1 = call i1 @run_test_1()
+; ASSERT EQ: i1 1 = call i1 @run_test_2()
+; ASSERT EQ: i1 1 = call i1 @run_test_3()
+; ASSERT EQ: i1 1 = call i1 @run_test_4()
+; ASSERT EQ: i1 1 = call i1 @run_test_5()
+
 %"core::ptr::metadata::PtrRepr<[u8]>" = type { [2 x i64] }
 
 @alloc_e14f096bd30e7c4fffb0d07638e6275d = private unnamed_addr constant <{ [75 x i8] }> <{ [75 x i8] c"/rustc/84dd17b56a931a631a23dfd5ef2018fd3ef49108/library/core/src/num/mod.rs" }>, align 1

@@ -3,6 +3,23 @@ source_filename = "llvm-link"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
+; ASSERT EQ: i1 1 = call i1 @run_test_1()
+; ASSERT EQ: i1 1 = call i1 @run_test_2()
+; ASSERT EQ: i1 1 = call i1 @run_test_3()
+; ASSERT EQ: i1 1 = call i1 @run_test_4()
+; ASSERT EQ: i1 1 = call i1 @run_test_5()
+; ASSERT EQ: i1 1 = call i1 @run_test_8()
+; ASSERT EQ: i1 1 = call i1 @run_test_9()
+; ASSERT EQ: i1 1 = call i1 @run_test_10()
+; ASSERT EQ: i1 1 = call i1 @run_test_11()
+; ASSERT EQ: i1 1 = call i1 @run_test_14()
+; ASSERT EQ: i1 1 = call i1 @run_test_15()
+; ASSERT EQ: i1 1 = call i1 @run_test_16()
+; ASSERT EQ: i1 1 = call i1 @run_test_17()
+; ASSERT EQ: i1 1 = call i1 @run_test_18()
+; ASSERT EQ: i1 1 = call i1 @run_test_19()
+; ASSERT EQ: i1 1 = call i1 @run_test_20()
+
 %"src::lib::CbRgb255" = type { i8, i8, i8 }
 
 ; Function Attrs: nonlazybind uwtable

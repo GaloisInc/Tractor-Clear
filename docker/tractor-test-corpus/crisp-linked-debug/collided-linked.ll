@@ -4,11 +4,11 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-unknown-linux-gnu"
 
 ; ASSERT EQ: i1 1 = call i1 @run_test_1()
-; SLOW ASSERT EQ: i1 1 = call i1 @run_test_2()
-; SLOW ASSERT EQ: i1 1 = call i1 @run_test_3()
+; ASSERT EQ: i1 1 = call i1 @run_test_2()
+; ASSERT EQ: i1 1 = call i1 @run_test_3()
 ; ASSERT EQ: i1 1 = call i1 @run_test_4()
 ; ASSERT EQ: i1 1 = call i1 @run_test_5()
-; SLOW ASSERT EQ: i1 1 = call i1 @run_test_6()
+; ASSERT EQ: i1 1 = call i1 @run_test_6()
 ; ASSERT EQ: i1 1 = call i1 @run_test_7()
 ; ASSERT EQ: i1 1 = call i1 @run_test_8()
 

@@ -303,11 +303,17 @@ ARG CRISP_DIR="/crisp-rust-outputs"
 ARG CRISP_LINKED_DIR="/crisp-linked"
 COPY /crisp-rust-outputs-gpt-5.4-20260311/Public-Tests/ ${CRISP_DIR}
 RUN mkdir ${CRISP_LINKED_DIR}
-WORKDIR ${CRISP_DIR}/B01_organic
+
+WORKDIR ${CRISP_DIR}
+# This is a long loop over multiple files, so too awful to write in Docker
 COPY compile-crisp-output.sh .
 RUN chmod +x ./compile-crisp-output.sh
-# This is a long loop over multiple files, so too awful to write in Docker
-RUN ./compile-crisp-output.sh
+
+WORKDIR ${CRISP_DIR}/B01_organic
+RUN ../compile-crisp-output.sh
+
+WORKDIR ${CRISP_DIR}/B01_synthetic
+RUN ../compile-crisp-output.sh
 
 WORKDIR ${CRISP_LINKED_DIR}
 
