@@ -42,15 +42,13 @@ WORKDIR /Test-Corpus/
 RUN git checkout ${TRACTOR_TESTS_COMMIT}
 
 # For testing purposes, it's nice to only have a few projects
-RUN rm -rf ./Public-Tests/B01_organic \
-           ./Public-Tests/B02_organic \
-           ./Public-Tests/B01_synthetic \
-           ./Public-Tests/B02_synthetic \
-           ./Public-Tests/P00_perlin_noise \
-           ./Public-Tests/P01_sphincs_plus
-RUN git restore ./Public-Tests/B01_synthetic/001_helloworld_lib
-RUN git restore ./Public-Tests/B01_organic/colourblind_lib
-RUN git restore ./Public-Tests/B01_organic/div_euclid_lib
+RUN rm -rf \
+  # ./Public-Tests/B01_organic \
+  # ./Public-Tests/B02_organic \
+  # ./Public-Tests/B01_synthetic \
+  # ./Public-Tests/B02_synthetic \
+  ./Public-Tests/P00_perlin_noise \
+  ./Public-Tests/P01_sphincs_plus
 
 COPY clang-wrapper.sh /
 RUN ln -s /clang-wrapper.sh /usr/local/bin/clang
@@ -313,6 +311,12 @@ WORKDIR ${CRISP_DIR}/B01_organic
 RUN ../compile-crisp-output.sh
 
 WORKDIR ${CRISP_DIR}/B01_synthetic
+RUN ../compile-crisp-output.sh
+
+WORKDIR ${CRISP_DIR}/B02_organic
+RUN ../compile-crisp-output.sh
+
+WORKDIR ${CRISP_DIR}/B02_synthetic
 RUN ../compile-crisp-output.sh
 
 WORKDIR ${CRISP_LINKED_DIR}
