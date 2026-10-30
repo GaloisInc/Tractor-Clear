@@ -9,9 +9,7 @@
 # Note: supposedly std implies core and alloc, but marking them explicitly in case this changes in
 # the future.
 # Note: panic_immediate_abort supposedly gets rid of all the unwinding logic and just aborts on
-# panic, which is fine for our current purposes.
-exec /usr/bin/cargo ${@:1:1} \
+# panic, which is fine for our current purposes.  It is disabled for now because it creates issues.
+exec /usr/bin/cargo "${@:1:1}" \
   "-Z" "build-std=alloc,core,panic_abort,std" \
-  # Disabling this now as it creates issues
-  # "-Z" "build-std-features=panic_immediate_abort" \
-  ${@:2}
+  "${@:2}"

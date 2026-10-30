@@ -5,6 +5,9 @@ set -o nounset
 set -o pipefail
 set -x
 
+: "${LLVM_LINK:=llvm-link-21}"
+: "${LLVM_DIS:=llvm-dis-21}"
+
 (
   echo "CRISP_LINKED_DIR: ${CRISP_LINKED_DIR}"
   echo "TARGET: ${TARGET}"
@@ -26,21 +29,21 @@ set -x
       cd linked
       # Note: if we ever get dead_on_return in the LLVM IR, we can use this to remove it:
       # RUN sed -i 's/ dead_on_return//g' *.ll
-      llvm-link-20 *.ll -o linked.bc
-      llvm-dis-20 linked.bc -o linked.ll
+      ${LLVM_LINK} *.ll -o linked.bc
+      ${LLVM_DIS} linked.bc -o linked.ll
       cp linked.ll ${CRISP_LINKED_DIR}/${lib}-linked.ll;
       # Note: building the binary does not make sense for the libs, so it's annoying, would need
       # to inject some special main
       # echo "========== MINIFYING BITCODE ==========" &&
       # # Let's also build the binary, to be able to use gdb
-      # opt-20
+      # ${LLVM_OPT}
       #   -passes='internalize,globalopt,globaldce,adce,dce'
       #   -internalize-public-api-list='main'
       #   linked.bc -o opt.bc &&
       # echo "========== DISASSEMBLING BITCODE ==========" &&
-      # llvm-dis-20 opt.bc -o opt.ll &&
+      # ${LLVM_DIS} opt.bc -o opt.ll &&
       # echo "========== COMPILING IR ==========" &&
-      # clang-20 opt.ll -o bin &&
+      # ${CLANG_BIN:-clang-21} opt.ll -o bin &&
       # echo "========== COPYING BINARY ==========" &&
       # cp bin ${CRISP_LINKED_DIR}/${lib}-bin;
     )

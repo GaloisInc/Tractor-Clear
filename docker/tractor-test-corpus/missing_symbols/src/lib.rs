@@ -3,12 +3,14 @@ use std::alloc::{GlobalAlloc, Layout, System};
 #[global_allocator]
 static GLOBAL_ALLOCATOR: System = System;
 
-// #[unsafe(no_mangle)]
-// pub extern "C" fn __rust_alloc_error_handler(layout_size: usize, _layout_align: usize) -> ! {
-//     // you can log or do something with layout_size/layout_align if you have that info
-//     // then decide: panic or abort
-//     panic!("Failed to allocate {}", layout_size);
-// }
+unsafe extern "C" {
+    fn abort() -> !;
+}
+
+#[unsafe(export_name = "_RNvCs6pHQJ60SlNr_7___rustc26___rust_alloc_error_handler")]
+pub extern "C" fn __rust_alloc_error_handler(_layout_size: usize, _layout_align: usize) -> ! {
+    unsafe { abort() }
+}
 
 #[unsafe(no_mangle)]
 pub static __rust_no_alloc_shim_is_unstable: u8 = 0;
@@ -52,6 +54,17 @@ unsafe extern "C" fn realloc_fallback(
 // This is the symbol when using GNU libc
 #[unsafe(no_mangle)]
 pub extern "C" fn _ZN3std3sys5alloc16realloc_fallback17h55cf233aa6e61729E(
+    alloc: *const System,
+    ptr: *mut u8,
+    old_layout: Layout,
+    new_size: usize,
+) -> *mut u8 {
+    unsafe { realloc_fallback(alloc, ptr, old_layout, new_size) }
+}
+
+// This is the symbol when using GNU libc with nightly-2025-06-01.
+#[unsafe(no_mangle)]
+pub extern "C" fn _ZN3std3sys5alloc16realloc_fallback17h0dd0526b862c84d2E(
     alloc: *const System,
     ptr: *mut u8,
     old_layout: Layout,

@@ -1,29 +1,37 @@
 # Pinning for consistency, feel free to bump this whenever convenient
-# Last bump: Nov 24, 2025
-FROM ubuntu:24.04@sha256:84e77dee7d1bc93fb029a45e3c6cb9d8aa4831ccfcc7103d36e876938d28895b AS compile-tractor-test-corpus
+# Last bump: Oct 30, 2026
+FROM ubuntu:24.04@sha256:fe81560990fae86dc4743202b2cb4d3df98d0bcf949173cecef15ce1127ef852
 
 # Note: this was built against Test-Corpus commit de47e3e268f1991cc6df91576e6f94ebc82fed82
 
 RUN apt update -y
-ARG CLANG="clang-20"
+ARG LLVM_VERSION="20"
+ARG CLANG="clang-${LLVM_VERSION}"
+ENV LLVM_VERSION="${LLVM_VERSION}"
+ENV CLANG_BIN="/usr/bin/${CLANG}"
+ENV LLVM_LINK="llvm-link-${LLVM_VERSION}"
+ENV LLVM_DIS="llvm-dis-${LLVM_VERSION}"
+ENV LLVM_OPT="opt-${LLVM_VERSION}"
 # Note: ripgrep, tree, and vim are for convenience when debugging the output image
-RUN apt install -y build-essential ${CLANG} cmake git libclang-dev libssl-dev llvm musl-tools ninja-build pkg-config python3 python3-venv ripgrep rustup tree vim
+RUN apt install -y build-essential ${CLANG} cmake git libclang-${LLVM_VERSION}-dev libssl-dev llvm-${LLVM_VERSION} musl-tools ninja-build pkg-config python3 python3-venv ripgrep rustup tree vim
 
 # rustup commands fail with annoying errors if this isn't disabled first
 RUN rustup set auto-self-update disable
 
 # We want nightly, because we're going to extract LLVM IR for alloc/core/std, with a nightly flag.
-#
-# We're pinning to an older version of nightly because as of today (Oct 2025), the current nightly
-# is tied to clang-21, but we'd rather have everything on clang-20.
-# ARG RUSTVER="nightly-2025-06-01"
-ARG RUSTVER="nightly-2025-11-11"
+ARG RUSTVER="nightly-2025-06-01"
+# Problem with this one: it forces clang-21, which is not packaged by Ubuntu 24.04
+# ARG RUSTVER="nightly-2025-11-11"
+# This is the exact version set in the CRISP Rust output toolchain... but some failure
+# ARG RUSTVER="nightly-2023-04-15"
 ARG TARGET="x86_64-unknown-linux-gnu"
+ENV RUSTUP_TOOLCHAIN="${RUSTVER}"
 RUN rustup toolchain install ${RUSTVER}
 RUN rustup default ${RUSTVER}
 RUN rustup target add ${TARGET}
 # This makes the Rust source available to compile to LLVM
 RUN rustup component add rust-src --toolchain ${RUSTVER}
+RUN rustc -vV
 
 RUN mkdir -p /root/.ssh/
 ARG KNOWN_HOSTS="/root/.ssh/known_hosts"
@@ -83,11 +91,10 @@ WORKDIR /Test-Corpus/Public-Tests
 # This grabs all project-specific LLVM bitcode files, and copies their directory structure.
 RUN for bc in ./*/*/build-ninja/*.bc; \
       do mkdir -p ${LLVMIR_DIR}/`dirname $bc`; \
-      llvm-dis-20 -o ${LLVMIR_DIR}/`dirname $bc`/`basename $bc ".bc"`.ll $bc; \
+      ${LLVM_DIS} -o ${LLVMIR_DIR}/`dirname $bc`/`basename $bc ".bc"`.ll $bc; \
     done
 # Grab all dependency LLVM IR files, aggregate them all together (to avoid large redundant copies)
-# For some reason, these are now in debug, not release
-RUN for ll in /Test-Corpus/target/${TARGET}/debug/deps/*.ll; do \
+RUN for ll in /Test-Corpus/target/${TARGET}/${CARGO_BUILD_MODE}/deps/*.ll; do \
       llcopy="${LLVMIR_DIR}/deps/`basename $ll`"; \
       if [ ! -f ${llcopy} ] && [ `basename $ll` != runner* ]; then \
         cp $ll $llcopy; \
@@ -196,7 +203,7 @@ RUN mkdir -p ${RUNNERS_DIR}
 
 RUN mkdir linked
 WORKDIR ${LLVMIR_DIR}/linked
-RUN llvm-link-20 \
+RUN ${LLVM_LINK} \
   ../deps/addr2line-*.ll \
   ../deps/adler2-*.ll \
   ../deps/alloc-*.ll \
@@ -230,11 +237,11 @@ RUN llvm-link-20 \
   ../deps/missing_symbols-*.ll \
   ../deps/_001_helloworld_lib_runner-*.ll \
   -o linked.bc
-RUN opt-20 \
+RUN ${LLVM_OPT} \
   -passes='internalize,globalopt,globaldce,adce,dce' \
   -internalize-public-api-list='main' \
   linked.bc -o opt.bc
-RUN llvm-dis-20 opt.bc -o opt.ll
+RUN ${LLVM_DIS} opt.bc -o opt.ll
 # RUN rg Display ../deps | grep usize | grep define && false
 # RUN rg panic_fmt ../deps | grep define && false
 # Ensuring that the optimized binary is buildable
@@ -250,7 +257,7 @@ RUN ${CLANG} opt.ll -o opt
 # RUN make
 # RUN mkdir ${LLVMIR_DIR}/musl
 # RUN for bc in ./*.bc; do \
-#       llvm-dis-20 -o ${LLVMIR_DIR}/musl/`basename $bc ".bc"`.ll $bc; \
+#       ${LLVM_DIS} -o ${LLVMIR_DIR}/musl/`basename $bc ".bc"`.ll $bc; \
 #     done
 
 # Note: we want release mode in the below, because it removes the checks for misalignments, which
@@ -266,16 +273,16 @@ RUN ${CLANG} opt.ll -o opt
 # RUN mkdir linked
 # RUN cp ./target/${TARGET}/${CARGO_BUILD_MODE}/deps/*.ll ./linked
 # WORKDIR /${COLOURBLIND_GOOD_DIR}/linked
-# # Note: was forced to bump to a rustc that uses clang-21, which produces the dead_on_return
-# # attribute, but clang-20.1.2 is unable to parse it, so we need to get rid of it...
+# # Note: older LLVM tools may be unable to parse newer Rust-emitted attributes such as
+# # dead_on_return, so we keep the LLVM tools aligned with rustc's LLVM version.
 # RUN sed -i 's/ dead_on_return//g' *.ll
-# RUN llvm-link-20 *.ll -o linked.bc
-# RUN opt-20 \
+# RUN ${LLVM_LINK} *.ll -o linked.bc
+# RUN ${LLVM_OPT} \
 #   -passes='internalize,globalopt,globaldce,adce,dce' \
 #   -internalize-public-api-list='main' \
 #   linked.bc -o opt.bc
-# RUN llvm-dis-20 opt.bc -o opt.ll
-# RUN clang-20 opt.ll -o colourblind_good
+# RUN ${LLVM_DIS} opt.bc -o opt.ll
+# RUN ${CLANG} opt.ll -o colourblind_good
 
 # ARG COLOURBLIND_BAD_DIR="colourblind_bad"
 # COPY colourblind_bad /${COLOURBLIND_BAD_DIR}
@@ -286,16 +293,16 @@ RUN ${CLANG} opt.ll -o opt
 # RUN mkdir linked
 # RUN cp ./target/${TARGET}/${CARGO_BUILD_MODE}/deps/*.ll ./linked
 # WORKDIR /${COLOURBLIND_BAD_DIR}/linked
-# # Note: was forced to bump to a rustc that uses clang-21, which produces the dead_on_return
-# # attribute, but clang-20.1.2 is unable to parse it, so we need to get rid of it...
+# # Note: older LLVM tools may be unable to parse newer Rust-emitted attributes such as
+# # dead_on_return, so we keep the LLVM tools aligned with rustc's LLVM version.
 # RUN sed -i 's/ dead_on_return//g' *.ll
-# RUN llvm-link-20 *.ll -o linked.bc
-# RUN opt-20 \
+# RUN ${LLVM_LINK} *.ll -o linked.bc
+# RUN ${LLVM_OPT} \
 #   -passes='internalize,globalopt,globaldce,adce,dce' \
 #   -internalize-public-api-list='main' \
 #   linked.bc -o opt.bc
-# RUN llvm-dis-20 opt.bc -o opt.ll
-# RUN clang-20 opt.ll -o colourblind_bad
+# RUN ${LLVM_DIS} opt.bc -o opt.ll
+# RUN ${CLANG} opt.ll -o colourblind_bad
 
 ARG CRISP_DIR="/crisp-rust-outputs"
 ARG CRISP_LINKED_DIR="/crisp-linked"
@@ -329,5 +336,5 @@ WORKDIR ${CRISP_LINKED_DIR}
 # RUN mkdir linked
 # RUN cp ./target/x86_64-unknown-linux-gnu/debug/deps/*.ll ./linked
 # WORKDIR /no-std-main/linked
-# RUN llvm-link-20 *.ll -o linked.bc
-# RUN llvm-dis-20 linked.bc -o linked.ll
+# RUN ${LLVM_LINK} *.ll -o linked.bc
+# RUN ${LLVM_DIS} linked.bc -o linked.ll

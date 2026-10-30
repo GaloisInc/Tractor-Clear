@@ -15,4 +15,4 @@ for arg in "$@"; do
 done
 args+=("--save-temps")
 
-exec /usr/bin/clang-20 "${args[@]}"
+exec "${CLANG_BIN:-/usr/bin/clang-21}" "${args[@]}"

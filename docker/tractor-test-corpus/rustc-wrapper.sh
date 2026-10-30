@@ -10,4 +10,4 @@ for arg in "$@"; do
     args+=("$arg")
 done
 
-exec /usr/bin/rustc "${args[@]}"
+exec /usr/bin/rustup run "${RUSTUP_TOOLCHAIN}" rustc "${args[@]}"
